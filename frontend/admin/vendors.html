@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Vendors | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .vendor-tabs {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .v-tab {
+            cursor: pointer;
+            padding: 0.5rem 0;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .v-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .row-pending {
+            background-color: #fffde7 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item" data-page="dashboard">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </a>
+                <a href="vendors.html" class="sidebar-item active" data-page="vendors">
+                    <i class="fas fa-store"></i> Vendors
+                </a>
+                <a href="customers.html" class="sidebar-item" data-page="customers">
+                    <i class="fas fa-users"></i> Customers
+                </a>
+                <a href="bookings.html" class="sidebar-item" data-page="bookings">
+                    <i class="fas fa-book"></i> Bookings
+                </a>
+                <a href="finance.html" class="sidebar-item" data-page="finance">
+                    <i class="fas fa-money-bill-wave"></i> Finance
+                </a>
+                <a href="categories.html" class="sidebar-item" data-page="categories">
+                    <i class="fas fa-tags"></i> Categories
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h2 class="brand-font">Vendor Approval</h2>
+            </header>
+
+            <div class="vendor-tabs">
+                <div class="v-tab active" data-filter="ALL">All Vendors</div>
+                <div class="v-tab" data-filter="PENDING">Pending</div>
+                <div class="v-tab" data-filter="APPROVED">Approved</div>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Business Name</th>
+                                <th>Email / Phone</th>
+                                <th>Status</th>
+                                <th>Availability</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendorsTable">
+                            <!-- Data injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['ADMIN']);
+        let allVendors = [];
+        let currentFilter = 'ALL';
+
+        document.addEventListener('DOMContentLoaded', loadVendors);
+
+        async function loadVendors() {
+            showLoader();
+            try {
+                allVendors = await api.get('/vendors');
+                console.log('Vendors loaded. Example:', allVendors[0]); // Verification log
+                renderVendors();
+            } catch (e) {
+                showToast('Failed to load vendors', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderVendors() {
+            const tableBody = document.getElementById('vendorsTable');
+            let filtered = allVendors;
+            if (currentFilter !== 'ALL') {
+                filtered = allVendors.filter(v => v.status === currentFilter);
+            }
+
+            if (filtered.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No vendors found.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = filtered.map(v => `
+                <tr class="${v.status === 'PENDING' ? 'row-pending' : ''}">
+                    <td>${v.id}</td>
+                    <td><div style="font-weight: 600;">${v.name}</div></td>
+                    <td>
+                        <div style="font-size: 0.85rem;">${v.email}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">${v.phone}</div>
+                    </td>
+                    <td>${statusBadge(v.status)}</td>
+                    <td>${statusBadge(v.availability)}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            ${v.status === 'PENDING' ? `
+                                <button onclick="updateVendorStatus(${v.id}, 'approve')" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Approve</button>
+                                <button onclick="updateVendorStatus(${v.id}, 'reject')" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; color: var(--danger); border-color: var(--danger);">Reject</button>
+                            ` : ''}
+                            
+                            ${v.status === 'APPROVED' ? `
+                                ${v.availability === 'DISABLED' ? `
+                                    <button onclick="toggleAdminAvailability(${v.id}, 'AVAILABLE')" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Enable</button>
+                                ` : `
+                                    <button onclick="toggleAdminAvailability(${v.id}, 'DISABLED')" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; color: var(--danger); border-color: var(--danger);">Disable</button>
+                                `}
+                            ` : ''}
+
+                            <button onclick="deleteVendor(${v.id})" class="btn" style="color: var(--danger);"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        document.querySelectorAll('.v-tab').forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll('.v-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.filter;
+                renderVendors();
+            };
+        });
+
+        async function updateVendorStatus(id, action) {
+            // Guard against undefined or invalid IDs
+            if (!id || isNaN(id)) {
+                console.error('Invalid ID provided to updateVendorStatus:', id);
+                showToast('Invalid vendor selection. Please refresh and try again.', 'error');
+                return;
+            }
+
+            const confirmed = await new Promise(resolve => {
+                confirmModal(`Are you sure you want to ${action} this vendor?`, () => resolve(true));
+            });
+            if (!confirmed) return;
+
+            showLoader();
+            try {
+                // Endpoint: PUT /api/vendors/{id}/{action}?adminId={adminId}
+                await api.put(`/vendors/${id}/${action}?adminId=${user.id}`);
+                showToast(`Vendor ${action}ed successfully`, 'success');
+                loadVendors();
+            } catch (e) {
+                showToast('Failed to update vendor status', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+        async function toggleAdminAvailability(id, newStatus) {
+            confirmModal(`Are you sure you want to ${newStatus === 'DISABLED' ? 'disable' : 'enable'} this vendor?`, async () => {
+                showLoader();
+                try {
+                    await api.request('PATCH', `/vendors/${id}/availability?availability=${newStatus}&adminId=${user.id}`);
+                    showToast(`Vendor ${newStatus === 'DISABLED' ? 'disabled' : 'enabled'}`, 'success');
+                    loadVendors();
+                } catch (e) {
+                    showToast('Failed to update availability', 'error');
+                } finally {
+                    hideLoader();
+                }
+            });
+        }
+
+        async function deleteVendor(id) {
+            confirmModal('Are you sure you want to delete this vendor account permanently?', async () => {
+                showLoader();
+                try {
+                    await api.delete(`/vendors/${id}`);
+                    showToast('Vendor deleted', 'success');
+                    loadVendors();
+                } catch (e) { showToast('Failed to delete vendor', 'error'); }
+                finally { hideLoader(); }
+            });
+        }
+    </script>
+</body>
+</html>

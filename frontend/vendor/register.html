@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Register | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="fade-in" style="background-color: var(--bg-light); display: flex; align-items: center; justify-content: center; padding: 2rem;">
+
+    <div class="card" style="width: 100%; max-width: 600px; display: flex; padding: 0; overflow: hidden;">
+        <div style="flex: 1; background: var(--secondary); color: #fff; padding: 3rem; display: flex; flex-direction: column; justify-content: center;" class="hide-mobile">
+            <h1 class="brand-font" style="color: var(--primary);">Partner with Us</h1>
+            <p style="opacity: 0.8; margin-top: 1rem;">Showcase your luxury services to couples planning their dream wedding.</p>
+        </div>
+        
+        <div style="flex: 1.5; padding: 3rem;">
+            <div class="mb-2">
+                <h2 class="brand-font">Vendor Registration</h2>
+                <p class="text-muted">Fill in your business details to apply.</p>
+            </div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label">Business Name</label>
+                    <input type="text" id="name" class="form-control" placeholder="Grand Ballroom / Elite Catering" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="elite_catering" required>
+                </div>
+
+
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="email" class="form-control" placeholder="contact@business.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" id="phone" class="form-control" placeholder="07XXXXXXXX" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" style="width: 100%;" id="submitBtn">Apply Now</button>
+            </form>
+
+            <div class="mt-2 text-center">
+                <p class="text-muted">Already have an account? <a href="../login.html" class="text-primary">Sign in here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            utils.setLoading(submitBtn, true, 'Submitting Application...');
+
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                password: password
+            };
+
+            try {
+                confirmModal('Are you sure you want to submit this application?', async () => {
+                    utils.setLoading(submitBtn, true, 'Submitting...');
+                    try {
+                        await api.post('/vendors', payload, false);
+                        showToast('Application submitted successfully!', 'success');
+                        setTimeout(() => {
+                            window.location.href = '../login.html';
+                        }, 2000);
+                    } catch (error) {
+                        showToast(error.message || 'Registration failed', 'error');
+                        utils.setLoading(submitBtn, false, 'Apply Now');
+                    }
+                });
+            } catch (error) {
+                showToast(error.message || 'Registration failed', 'error');
+                utils.setLoading(submitBtn, false, 'Apply Now');
+            }
+        });
+    </script>
+    <style>
+        @media (max-width: 768px) {
+            .hide-mobile { display: none !important; }
+        }
+    </style>
+</body>
+</html>

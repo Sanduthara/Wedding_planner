@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .star-rating .star {
+            font-size: 1.5rem;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+        .star-rating .star.active, .star-rating .star:hover {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item" data-page="dashboard">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="events.html" class="sidebar-item" data-page="events">
+                    <i class="fas fa-calendar-alt"></i> My Events
+                </a>
+                <a href="packages.html" class="sidebar-item" data-page="packages">
+                    <i class="fas fa-box-open"></i> Browse Packages
+                </a>
+                <a href="bookings.html" class="sidebar-item active" data-page="bookings">
+                    <i class="fas fa-clipboard-list"></i> My Bookings
+                </a>
+                <a href="payments.html" class="sidebar-item" data-page="payments">
+                    <i class="fas fa-wallet"></i> My Payments
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h2 class="brand-font">My Bookings</h2>
+            </header>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Event / Packages</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsTable">
+                            <!-- Data injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-card">
+            <h3 class="brand-font mb-2">Leave a Review</h3>
+            <form id="reviewForm">
+                <div class="mb-2">
+                    <label class="form-label">Vendor Rating</label>
+                    <div class="star-rating" id="vendorRating" data-value="0">
+                        <span class="star" data-val="1">★</span>
+                        <span class="star" data-val="2">★</span>
+                        <span class="star" data-val="3">★</span>
+                        <span class="star" data-val="4">★</span>
+                        <span class="star" data-val="5">★</span>
+                    </div>
+                    <textarea id="vendorComment" class="form-control mt-1" placeholder="How was the vendor's service?" rows="2"></textarea>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Package Rating</label>
+                    <div class="star-rating" id="packageRating" data-value="0">
+                        <span class="star" data-val="1">★</span>
+                        <span class="star" data-val="2">★</span>
+                        <span class="star" data-val="3">★</span>
+                        <span class="star" data-val="4">★</span>
+                        <span class="star" data-val="5">★</span>
+                    </div>
+                    <textarea id="packageComment" class="form-control mt-1" placeholder="How was the package quality?" rows="2"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeReviewModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitReviewBtn">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['CUSTOMER']);
+        let currentBookingId = null;
+
+        document.addEventListener('DOMContentLoaded', loadBookings);
+
+        async function loadBookings() {
+            showLoader();
+            try {
+                const bookings = await api.get(`/bookings/customer/${user.id}`);
+                renderBookings(bookings);
+            } catch (error) {
+                showToast('Failed to load bookings', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderBookings(bookings) {
+            const tableBody = document.getElementById('bookingsTable');
+            if (bookings.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No bookings found. Start browsing packages to book!</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = bookings.reverse().map((b, index) => {
+                let eventDateStr = '';
+                if (Array.isArray(b.bookingDate)) {
+                    eventDateStr = `${b.bookingDate[0]}-${String(b.bookingDate[1]).padStart(2, '0')}-${String(b.bookingDate[2]).padStart(2, '0')}`;
+                } else if (b.bookingDate) {
+                    eventDateStr = b.bookingDate.split('T')[0];
+                }
+                
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                
+                const isFutureEvent = eventDateStr >= todayStr;
+                const canCancel = b.status !== 'CANCELLED' && isFutureEvent;
+                const packages = b.packages || [];
+                
+                // Grouping packages for display
+                const packageDetails = packages.map(p => `
+                    <div style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+                        <span style="font-weight: 600; color: var(--primary);">${p.packageTitle || 'Service'}</span>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Status: ${p.vendorStatus}</div>
+                    </div>
+                `).join('') || '<span class="text-muted">No packages found</span>';
+
+                return `
+                    <tr style="vertical-align: top;">
+                        <td style="padding-top: 1.5rem;">${index + 1}</td>
+                        <td style="padding-top: 1.5rem;">
+                            <div style="margin-bottom: 0.8rem; font-weight: 700; color: var(--text-dark); font-size: 1.1rem;">
+                                <i class="fas fa-heart" style="color: var(--primary); font-size: 0.8rem;"></i> ${b.eventName || 'Wedding Event'}
+                            </div>
+                            <div class="package-list-container">
+                                ${packageDetails}
+                            </div>
+                        </td>
+                        <td style="padding-top: 1.5rem;">${formatDate(b.bookingDate)}</td>
+                        <td style="padding-top: 1.5rem; font-weight: 600; color: var(--primary);">Rs. ${utils.formatCurrency(b.totalCost)}</td>
+                        <td style="padding-top: 1.5rem;">${b.location}</td>
+                        <td style="padding-top: 1.5rem;">${statusBadge(b.status)}</td>
+                        <td style="padding-top: 1.5rem;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                ${canCancel ? `<button onclick="cancelBooking(${b.bookingId})" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: var(--danger); color: var(--danger);">Cancel</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function cancelBooking(id) {
+            confirmModal('Are you sure you want to cancel this booking? This action might be subject to vendor policies.', async () => {
+                showLoader();
+                try {
+                    await api.put(`/bookings/${id}/status?status=CANCELLED`);
+                    showToast('Booking cancelled', 'success');
+                    loadBookings();
+                } catch (error) {
+                    showToast('Failed to cancel booking', 'error');
+                } finally {
+                    hideLoader();
+                }
+            });
+        }
+
+        // Review Logic
+        function openReviewModal(id) {
+            currentBookingId = id;
+            document.getElementById('reviewForm').reset();
+            resetStars('vendorRating');
+            resetStars('packageRating');
+            document.getElementById('reviewModal').style.display = 'flex';
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').style.display = 'none';
+        }
+
+        function resetStars(containerId) {
+            const container = document.getElementById(containerId);
+            container.dataset.value = "0";
+            container.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+        }
+
+        document.querySelectorAll('.star-rating .star').forEach(star => {
+            star.onclick = function() {
+                const container = this.parentElement;
+                const val = this.dataset.val;
+                container.dataset.value = val;
+                
+                container.querySelectorAll('.star').forEach(s => {
+                    if (s.dataset.val <= val) s.classList.add('active');
+                    else s.classList.remove('active');
+                });
+            };
+        });
+
+        document.getElementById('reviewForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitReviewBtn');
+            utils.setLoading(btn, true, 'Submitting...');
+
+            const payload = {
+                bookingId: currentBookingId,
+                vendorRating: document.getElementById('vendorRating').dataset.value,
+                packageRating: document.getElementById('packageRating').dataset.value,
+                vendorComment: document.getElementById('vendorComment').value,
+                packageComment: document.getElementById('packageComment').value
+            };
+
+            if (payload.vendorRating === "0" || payload.packageRating === "0") {
+                showToast('Please provide a rating', 'warning');
+                utils.setLoading(btn, false, 'Submit Review');
+                return;
+            }
+
+            try {
+                await api.post('/reviews', payload);
+                showToast('Thank you for your review!', 'success');
+                closeReviewModal();
+            } catch (error) {
+                showToast(error.message || 'Failed to submit review', 'error');
+            } finally {
+                utils.setLoading(btn, false, 'Submit Review');
+            }
+        };
+    </script>
+</body>
+</html>

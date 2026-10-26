@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item" data-page="dashboard">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </a>
+                <a href="vendors.html" class="sidebar-item" data-page="vendors">
+                    <i class="fas fa-store"></i> Vendors
+                </a>
+                <a href="customers.html" class="sidebar-item" data-page="customers">
+                    <i class="fas fa-users"></i> Customers
+                </a>
+                <a href="bookings.html" class="sidebar-item" data-page="bookings">
+                    <i class="fas fa-book"></i> Bookings
+                </a>
+                <a href="finance.html" class="sidebar-item active" data-page="finance">
+                    <i class="fas fa-money-bill-wave"></i> Finance
+                </a>
+                <a href="categories.html" class="sidebar-item" data-page="categories">
+                    <i class="fas fa-tags"></i> Categories
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h2 class="brand-font">Financial Tracking</h2>
+                <button id="addTxBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Record Transaction
+                </button>
+            </header>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                <div class="card stat-card" style="border-left: 4px solid var(--success);">
+                    <span class="stat-label">Total Income</span>
+                    <span class="stat-value" id="totalIncome" style="color: var(--success);">LKR 0</span>
+                </div>
+                <div class="card stat-card" style="border-left: 4px solid var(--danger);">
+                    <span class="stat-label">Total Expenses</span>
+                    <span class="stat-value" id="totalExpense" style="color: var(--danger);">LKR 0</span>
+                </div>
+                <div class="card stat-card" style="border-left: 4px solid var(--primary);">
+                    <span class="stat-label">Net Profit</span>
+                    <span class="stat-value" id="netProfit">LKR 0</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="brand-font mb-2">Transaction History</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                            </tr>
+                        </thead>
+                        <tbody id="financeTable">
+                            <!-- Data injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal-overlay" id="txModal">
+        <div class="modal-card">
+            <h3 class="brand-font mb-2">Record Transaction</h3>
+            <form id="txForm">
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select id="txType" class="form-control" required>
+                        <option value="INCOME">Income</option>
+                        <option value="EXPENSE">Expense</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <input type="text" id="txDesc" class="form-control" placeholder="e.g. Booking Commission" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Amount (LKR)</label>
+                        <input type="number" id="txAmount" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <input type="text" id="txCategory" class="form-control" placeholder="Commission / Ads" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment Method</label>
+                    <select id="txMethod" class="form-control" required>
+                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                        <option value="CASH">Cash</option>
+                        <option value="ONLINE">Online</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['ADMIN']);
+        const txModal = document.getElementById('txModal');
+        const txForm = document.getElementById('txForm');
+
+        document.addEventListener('DOMContentLoaded', loadFinance);
+
+        async function loadFinance() {
+            showLoader();
+            try {
+                const data = await api.get('/finance');
+                renderFinance(data);
+            } catch (e) {
+                showToast('Failed to load financial records', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderFinance(data) {
+            const income = data.filter(f => f.type === 'INCOME').reduce((sum, f) => sum + f.amount, 0);
+            const expense = data.filter(f => f.type === 'EXPENSE').reduce((sum, f) => sum + f.amount, 0);
+            
+            document.getElementById('totalIncome').innerText = formatLKR(income);
+            document.getElementById('totalExpense').innerText = formatLKR(expense);
+            document.getElementById('netProfit').innerText = formatLKR(income - expense);
+
+            const tableBody = document.getElementById('financeTable');
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions recorded.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = data.reverse().map(f => `
+                <tr>
+                    <td>${formatDate(f.transactionDate)}</td>
+                    <td>${f.description}</td>
+                    <td>${f.category}</td>
+                    <td><span class="badge" style="background: ${f.type === 'INCOME' ? '#E8F5E9; color: #2E7D32;' : '#FFEBEE; color: #C62828;'}">${f.type}</span></td>
+                    <td style="font-weight: 600;">${formatLKR(f.amount)}</td>
+                    <td>${f.paymentMethod}</td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('addTxBtn').onclick = () => {
+            txForm.reset();
+            txModal.style.display = 'flex';
+        };
+
+        function closeModal() {
+            txModal.style.display = 'none';
+        }
+
+        txForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            utils.setLoading(btn, true, 'Recording...');
+
+            const payload = {
+                type: document.getElementById('txType').value,
+                amount: document.getElementById('txAmount').value,
+                category: document.getElementById('txCategory').value,
+                paymentMethod: document.getElementById('txMethod').value,
+                description: document.getElementById('txDesc').value,
+                transactionDate: new Date().toISOString()
+            };
+
+            try {
+                await api.post('/finance', payload);
+                showToast('Transaction recorded', 'success');
+                closeModal();
+                loadFinance();
+            } catch (err) {
+                showToast('Failed to record transaction', 'error');
+            } finally {
+                utils.setLoading(btn, false, 'Record');
+            }
+        };
+    </script>
+</body>
+</html>

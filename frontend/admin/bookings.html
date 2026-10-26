@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Bookings | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .details-row {
+            display: none;
+            background-color: #fcfcfc;
+        }
+        .details-card {
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            margin-bottom: 1rem;
+        }
+        .package-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px dashed var(--border);
+        }
+        .package-item:last-child {
+            border-bottom: none;
+        }
+        .btn-details {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+            background: #f0f0f0;
+            color: var(--text-dark);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .btn-details:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item" data-page="dashboard">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </a>
+                <a href="vendors.html" class="sidebar-item" data-page="vendors">
+                    <i class="fas fa-store"></i> Vendors
+                </a>
+                <a href="customers.html" class="sidebar-item" data-page="customers">
+                    <i class="fas fa-users"></i> Customers
+                </a>
+                <a href="bookings.html" class="sidebar-item active" data-page="bookings">
+                    <i class="fas fa-book"></i> Bookings
+                </a>
+                <a href="finance.html" class="sidebar-item" data-page="finance">
+                    <i class="fas fa-money-bill-wave"></i> Finance
+                </a>
+                <a href="categories.html" class="sidebar-item" data-page="categories">
+                    <i class="fas fa-tags"></i> Categories
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h2 class="brand-font">Global Bookings</h2>
+            </header>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Customer ID</th>
+                                <th>Customer Name</th>
+                                <th>Event Name</th>
+                                <th>Event Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsTable">
+                            <!-- Data injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['ADMIN']);
+
+        document.addEventListener('DOMContentLoaded', loadAllBookings);
+
+        async function loadAllBookings() {
+            showLoader();
+            try {
+                const bookings = await api.get('/bookings');
+                renderBookings(bookings);
+            } catch (error) {
+                showToast('Failed to load global bookings', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderBookings(bookings) {
+            const tableBody = document.getElementById('bookingsTable');
+            if (bookings.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No bookings exist on the platform.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = bookings.reverse().map((b, index) => {
+                return `
+                    <tr id="row-${b.bookingId}">
+                        <td>${index + 1}</td>
+                        <td style="font-weight: 600; color: var(--primary);">${b.customerId || b.bookingId}</td>
+                        <td>
+                            <div style="font-weight: 600;">${b.customerName || 'Client'}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;">${b.eventName || 'Wedding Event'}</div>
+                        </td>
+                        <td>${formatDate(b.bookingDate)}</td>
+                        <td>${statusBadge(b.status)}</td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <button onclick="toggleDetails(${b.bookingId})" class="btn-details">
+                                    <i class="fas fa-info-circle"></i> More Details
+                                </button>
+                                <select onchange="updateBookingStatus(${b.bookingId}, this.value)" class="form-control" style="padding: 0.2rem; font-size: 0.8rem; width: 110px;">
+                                    <option value="PENDING" ${b.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                                    <option value="CONFIRMED" ${b.status === 'CONFIRMED' ? 'selected' : ''}>Confirmed</option>
+                                    <option value="CANCELLED" ${b.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+                                </select>
+                                <button onclick="deleteBooking(${b.bookingId})" class="btn" style="color: var(--danger); padding: 0;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="details-row" id="details-${b.bookingId}">
+                        <td colspan="7">
+                            <div class="details-card">
+                                <h4 class="brand-font mb-1" style="font-size: 1rem; color: var(--secondary);">Package Breakdown</h4>
+                                <div class="package-breakdown-container" id="pkg-container-${b.bookingId}">
+                                    <div class="text-muted"><i class="fas fa-spinner fa-spin"></i> Loading details...</div>
+                                </div>
+                                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                        Location: <strong>${b.location || 'Not Set'}</strong> | Payment: <strong>${b.paymentType || 'Not Set'}</strong>
+                                    </div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">
+                                        Total: LKR ${b.totalCost ? b.totalCost.toLocaleString() : '0.00'}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function toggleDetails(id) {
+            const row = document.getElementById(`details-${id}`);
+            const isVisible = row.style.display === 'table-row';
+            
+            document.querySelectorAll('.details-row').forEach(r => r.style.display = 'none');
+            
+            if (!isVisible) {
+                row.style.display = 'table-row';
+                const container = document.getElementById(`pkg-container-${id}`);
+                
+                if (container.dataset.loaded !== 'true') {
+                    try {
+                        const packages = await api.get(`/bookings/${id}/packages`);
+                        if (packages.length === 0) {
+                            container.innerHTML = '<div class="text-muted">No packages selected for this booking.</div>';
+                        } else {
+                            container.innerHTML = packages.map(p => `
+                                <div class="package-item">
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--primary);">${p.packageTitle}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">Vendor: ${p.vendorName || 'N/A'}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-weight: 600;">LKR ${p.priceAtBooking ? p.priceAtBooking.toLocaleString() : '0.00'}</div>
+                                        <div style="font-size: 0.7rem; color: ${p.vendorStatus === 'APPROVED' ? 'var(--success)' : 'var(--warning)'};">
+                                            ${p.vendorStatus}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('');
+                            container.dataset.loaded = 'true';
+                        }
+                    } catch (e) {
+                        container.innerHTML = '<div class="text-danger">Failed to load package details.</div>';
+                    }
+                }
+            }
+        }
+
+        async function updateBookingStatus(id, status) {
+            try {
+                showLoader();
+                await api.put(`/bookings/${id}/status?status=${status}`);
+                showToast(`Booking #${id} updated to ${status}`, 'success');
+                loadAllBookings();
+            } catch (e) {
+                showToast('Failed to update booking', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function deleteBooking(id) {
+            confirmModal('Are you sure you want to delete this booking record? This cannot be undone.', async () => {
+                showLoader();
+                try {
+                    await api.delete(`/bookings/${id}`);
+                    showToast('Booking deleted', 'success');
+                    loadAllBookings();
+                } catch (e) { showToast('Failed to delete booking', 'error'); }
+                finally { hideLoader(); }
+            });
+        }
+    </script>
+</body>
+</html>

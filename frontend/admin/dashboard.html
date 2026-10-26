@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+                <span style="font-size: 0.7rem; color: var(--primary); letter-spacing: 2px;">ADMINISTRATOR</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item active" data-page="dashboard">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </a>
+                <a href="vendors.html" class="sidebar-item" data-page="vendors">
+                    <i class="fas fa-store"></i> Vendors
+                </a>
+                <a href="customers.html" class="sidebar-item" data-page="customers">
+                    <i class="fas fa-users"></i> Customers
+                </a>
+                <a href="bookings.html" class="sidebar-item" data-page="bookings">
+                    <i class="fas fa-book"></i> Bookings
+                </a>
+                <a href="finance.html" class="sidebar-item" data-page="finance">
+                    <i class="fas fa-money-bill-wave"></i> Finance
+                </a>
+                <a href="categories.html" class="sidebar-item" data-page="categories">
+                    <i class="fas fa-tags"></i> Categories
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h2 class="brand-font">Admin Overview</h2>
+                <div class="user-profile" style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="adminName" style="font-weight: 600;">Administrator</span>
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--secondary); color: var(--primary); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                        <span id="adminInitial">A</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- KPI Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                <div class="card stat-card">
+                    <span class="stat-label">Total Customers</span>
+                    <span class="stat-value" id="totalCustomers">0</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="stat-label">Vendors (Pending)</span>
+                    <span class="stat-value" id="vendorStats">0 / 0</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="stat-label">Active Bookings</span>
+                    <span class="stat-value" id="activeBookings">0</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="stat-label">Total Revenue</span>
+                    <span class="stat-value" id="totalRevenue" style="font-size: 1.2rem;">LKR 0</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                <!-- Chart -->
+                <div class="card">
+                    <h3 class="brand-font mb-2">Revenue Overview</h3>
+                    <canvas id="revenueChart" height="200"></canvas>
+                </div>
+
+                <!-- Recent Bookings List -->
+                <div class="card">
+                    <h3 class="brand-font mb-2">Recent Bookings</h3>
+                    <div id="recentBookingsList" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- Data injected here -->
+                    </div>
+                    <a href="bookings.html" class="btn btn-outline w-100 mt-1">View All</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['ADMIN']);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!user) return;
+            document.getElementById('adminName').innerText = user.name;
+            document.getElementById('adminInitial').innerText = user.name.charAt(0);
+
+            showLoader();
+            try {
+                // Fetch all data for KPIs
+                const [customers, vendors, bookings, finance] = await Promise.all([
+                    api.get('/customers'),
+                    api.get('/vendors'),
+                    api.get('/bookings'),
+                    api.get('/finance')
+                ]);
+
+                // Update KPI values
+                document.getElementById('totalCustomers').innerText = customers.length;
+                
+                const pendingVendors = vendors.filter(v => v.status === 'PENDING').length;
+                document.getElementById('vendorStats').innerText = `${vendors.length} (${pendingVendors})`;
+                
+                document.getElementById('activeBookings').innerText = bookings.filter(b => b.status === 'CONFIRMED').length;
+                
+                const totalIncome = finance.filter(f => f.type === 'INCOME').reduce((sum, f) => sum + f.amount, 0);
+                document.getElementById('totalRevenue').innerText = formatLKR(totalIncome);
+
+                // Render Chart
+                renderRevenueChart(finance);
+
+                // Render recent bookings
+                const recent = bookings.slice(-4).reverse();
+                document.getElementById('recentBookingsList').innerHTML = recent.map(b => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border);">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.9rem;">${b.bookingId} - ${b.customerName || 'Client'}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(b.bookingDate)}</div>
+                        </div>
+                        ${statusBadge(b.status)}
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load admin metrics', 'error');
+            } finally {
+                hideLoader();
+            }
+        });
+
+        function renderRevenueChart(finance) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            // Aggregation logic for last 6 months
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                months.push(d.toLocaleString('default', { month: 'short' }));
+            }
+
+            const incomeData = new Array(6).fill(0);
+            const expenseData = new Array(6).fill(0);
+
+            finance.forEach(f => {
+                const fDate = new Date(f.transactionDate);
+                const fMonth = fDate.toLocaleString('default', { month: 'short' });
+                const monthIdx = months.indexOf(fMonth);
+                
+                if (monthIdx !== -1) {
+                    if (f.type === 'INCOME') incomeData[monthIdx] += f.amount;
+                    else if (f.type === 'EXPENSE') expenseData[monthIdx] += f.amount;
+                }
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: incomeData,
+                            backgroundColor: '#D4859A',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Expense',
+                            data: expenseData,
+                            backgroundColor: '#3B2A32',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Packages | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .filter-sidebar {
+            width: 280px;
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            height: fit-content;
+            position: sticky;
+            top: calc(var(--header-height) + 2rem);
+            border: 1px solid var(--border);
+        }
+
+        .packages-container {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .packages-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .package-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .package-header {
+            height: 150px;
+            background: linear-gradient(135deg, #fdeef2, #f3dde4);
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item" data-page="dashboard">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="events.html" class="sidebar-item" data-page="events">
+                    <i class="fas fa-calendar-alt"></i> My Events
+                </a>
+                <a href="packages.html" class="sidebar-item active" data-page="packages">
+                    <i class="fas fa-box-open"></i> Browse Packages
+                </a>
+                <a href="bookings.html" class="sidebar-item" data-page="bookings">
+                    <i class="fas fa-clipboard-list"></i> My Bookings
+                </a>
+                <a href="payments.html" class="sidebar-item" data-page="payments">
+                    <i class="fas fa-wallet"></i> My Payments
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header" style="flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="backToCats" class="btn btn-outline" style="display: none;" onclick="showCategoryView()">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <h2 class="brand-font" id="pageTitle" style="white-space: nowrap;">Explore Categories</h2>
+                </div>
+
+                <!-- Small Header Filter Bar -->
+                <div id="topFilterBar" style="display: none; background: var(--bg-light); padding: 0.5rem 1.2rem; border-radius: 50px; border: 1px solid var(--border); flex: 1; max-width: 400px; margin: 0 1rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <label style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; color: var(--text-muted); letter-spacing: 0.5px;">Capacity:</label>
+                        <input type="range" id="durationSlider" min="50" max="2000" step="50" value="50" 
+                            style="flex: 1; height: 4px; accent-color: var(--primary); cursor: pointer;" 
+                            oninput="updateDurationLabel(this.value); renderPackages();">
+                        <span id="currentDurationLabel" style="font-size: 0.8rem; font-weight: 700; color: var(--primary); white-space: nowrap; min-width: 80px;">50 Guests</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div id="venueCountBadge" style="display: none; background: var(--secondary); color: #fff; padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600; white-space: nowrap;">
+                        <span id="filteredCount">0</span> Venues
+                    </div>
+                    <button id="itineraryBtn" class="btn btn-primary"
+                        style="display: none; border-radius: 50px; background: var(--secondary);">
+                        <i class="fas fa-calendar-check"></i> VIEW MY ITINERARY
+                    </button>
+                </div>
+            </header>
+
+            <!-- Category View -->
+            <div id="categoryView" class="packages-grid" style="margin-top: 1rem;">
+                <!-- Category Cards injected here -->
+            </div>
+
+            <!-- Packages View (Hidden by default) -->
+            <div class="packages-container" id="packagesView" style="display: none;">
+                <!-- Grid takes full width now -->
+                <div class="packages-grid" id="packagesGrid" style="width: 100%;">
+                    <!-- Packages injected here -->
+                </div>
+            </div>
+
+            <!-- Package Detail View (Hidden by default) -->
+            <div id="packageDetailView" style="display: none; margin-top: 1rem;">
+                <div class="card" style="padding: 2rem; max-width: 900px; margin: 0 auto;">
+                    <div id="packageDetailContent">
+                        <!-- Content injected here -->
+                    </div>
+
+                    <div id="addPackageContainer"
+                        style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 2rem; display: flex; justify-content: center;">
+                        <button type="button" class="btn btn-primary" id="addPackageBtn"
+                            style="padding: 1rem 4rem; font-weight: 700; font-size: 1.1rem; letter-spacing: 1px;">ADD
+                            PACKAGE TO MY EVENT</button>
+                    </div>
+
+                    <!-- Reviews moved after booking -->
+                    <div id="packageReviews"
+                        style="margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 2rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h4 class="brand-font" style="font-size: 1.3rem;">Customer Reviews</h4>
+                            <div id="detailAvgRating"></div>
+                        </div>
+                        <div id="reviewsList" class="text-center py-2">
+                            <i class="fas fa-circle-notch fa-spin text-primary"></i> Loading reviews...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal removed since we use full page view now -->
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['CUSTOMER']);
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('eventId');
+
+        let allPackages = [];
+        let categories = [];
+        let selectedPackage = null;
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        let activeCategory = null;
+
+        async function init() {
+            showLoader();
+            try {
+                // Parallel fetch
+                const [pkgData, catData] = await Promise.all([
+                    api.get('/packages/available'),
+                    api.get('/categories')
+                ]);
+
+                allPackages = pkgData;
+                categories = catData;
+
+                renderCategoryCards();
+
+                const searchQuery = urlParams.get('search');
+                if (searchQuery) {
+                    performGlobalSearch(searchQuery);
+                }
+
+                if (eventId) {
+                    const iBtn = document.getElementById('itineraryBtn');
+                    iBtn.style.display = 'block';
+                    iBtn.onclick = () => window.location.href = `event-details.html?eventId=${eventId}`;
+                }
+            } catch (error) {
+                showToast('Failed to load packages', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderCategoryCards() {
+            const container = document.getElementById('categoryView');
+            const icons = {
+                'Venue & Space Management': 'fa-hotel',
+                'Catering & Beverage Services': 'fa-utensils',
+                'Decoration & Event Styling': 'fa-palette',
+                'Photography & Cinematography': 'fa-camera',
+                'Entertainment & Music': 'fa-music',
+                'Bridal Wear & Groom Attire': 'fa-tshirt',
+                'Beauty & Hair Services': 'fa-cut',
+                'Stationery & Invitations': 'fa-envelope-open-text',
+                'Wedding Planning & Coordination': 'fa-calendar-heart',
+                'Transport & Wedding Cars': 'fa-car'
+            };
+
+            const descriptions = {
+                'Venue & Space Management': 'Find the perfect setting for your vows, from grand halls to scenic gardens.',
+                'Catering & Beverage Services': 'Exquisite menus and professional service to delight your guests.',
+                'Decoration & Event Styling': 'Transform your vision into reality with bespoke themes and floral art.',
+                'Photography & Cinematography': 'Capture every precious moment with cinematic excellence.',
+                'Entertainment & Music': 'Set the perfect mood with professional DJs, bands, and performers.'
+            };
+
+            container.innerHTML = categories.map(c => `
+                <div class="card" style="cursor: pointer; transition: transform 0.3s;" onclick="selectCategory('${c.categoryName}', ${c.categoryId})" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="package-header" style="height: 120px; font-size: 2.5rem;">
+                        <i class="fas ${icons[c.categoryName] || 'fa-gem'}"></i>
+                    </div>
+                    <div class="card-body" style="padding: 1.5rem; text-align: center;">
+                        <h3 class="brand-font mb-1" style="font-size: 1.2rem;">${c.categoryName}</h3>
+                        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1.5rem; min-height: 3rem;">
+                            ${descriptions[c.categoryName] || 'Explore our exclusive selection of premium services for your special day.'}
+                        </p>
+                        <button class="btn btn-primary w-100">Browse Services</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let activeCategoryId = null;
+
+        function selectCategory(catName, catId) {
+            activeCategory = catName;
+            activeCategoryId = catId;
+            document.getElementById('categoryView').style.display = 'none';
+            document.getElementById('packagesView').style.display = 'flex';
+            document.getElementById('backToCats').style.display = 'block';
+            document.getElementById('pageTitle').innerText = catName;
+
+            // Show/Hide Top Filter & Badge for Venue (Category ID 1)
+            const topFilter = document.getElementById('topFilterBar');
+            const countBadge = document.getElementById('venueCountBadge');
+            
+            if (catId === 1) {
+                topFilter.style.display = 'block';
+                countBadge.style.display = 'block';
+                document.getElementById('durationSlider').value = 50;
+                updateDurationLabel(50);
+            } else {
+                topFilter.style.display = 'none';
+                countBadge.style.display = 'none';
+            }
+
+            renderPackages();
+        }
+
+        function showCategoryView() {
+            activeCategory = null;
+            activeCategoryId = null;
+            document.getElementById('categoryView').style.display = 'grid';
+            document.getElementById('packagesView').style.display = 'none';
+            document.getElementById('packageDetailView').style.display = 'none';
+            document.getElementById('backToCats').style.display = 'none';
+            document.getElementById('pageTitle').innerText = 'Explore Categories';
+            
+            document.getElementById('topFilterBar').style.display = 'none';
+            document.getElementById('venueCountBadge').style.display = 'none';
+        }
+
+        function renderPackages() {
+            const grid = document.getElementById('packagesGrid');
+            let filtered = allPackages.filter(p => {
+                return p.categoryName === activeCategory || p.categoryId === activeCategoryId;
+            });
+
+            // Apply Capacity Filter if applicable (Category ID 1 = Venue)
+            if (activeCategory === 'Venue & Space Management' || activeCategoryId === 1) {
+                // 1. Minimum Capacity Slider filter (Using Duration column as Capacity)
+                const minCap = parseInt(document.getElementById('durationSlider').value);
+                filtered = filtered.filter(p => {
+                    const venueCap = parseInt(p.duration) || 0;
+                    return venueCap >= minCap;
+                });
+
+                // 2. Sidebar Capacity filter (Legacy ranges)
+                const range = document.querySelector('input[name="capacityRange"]:checked');
+                if (range && range.value !== 'all') {
+                    const rangeVal = range.value;
+                    filtered = filtered.filter(p => {
+                        const cap = parseInt(p.duration) || extractCapacity(p.description) || 0;
+                        if (rangeVal === 'small') return cap < 250;
+                        if (rangeVal === 'medium') return cap >= 250 && cap <= 500;
+                        if (rangeVal === 'large') return cap > 500;
+                        return true;
+                    });
+                }
+                
+                // Update counter
+                document.getElementById('filteredCount').innerText = filtered.length;
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="card text-center" style="grid-column: 1/-1;"><p class="text-muted">No packages available in this category yet.</p></div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => {
+                const category = categories.find(c => c.categoryId === p.categoryId);
+                const categoryName = category ? category.categoryName : 'General';
+                const ratingHtml = p.averageRating
+                    ? `<div style="display: flex; flex-direction: column; align-items: center; gap: 0.2rem;">
+                         ${starRating(Math.round(p.averageRating))} 
+                         <span style="font-size: 0.75rem; color: var(--text-muted);">${p.averageRating.toFixed(1)} / 5.0</span>
+                       </div>`
+                    : '<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Not rated yet</span>';
+
+                return `
+                <div class="card package-card" style="cursor: pointer; transition: all 0.3s;" onclick="showPackageDetails(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+                    <div class="package-header">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <div style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <span class="badge badge-confirmed" style="font-size: 0.7rem; margin-bottom: 0.5rem;">${categoryName}</span>
+                        <h3 class="brand-font mb-1" style="font-size: 1.2rem; min-height: 3rem; display: flex; align-items: center;">${p.title}</h3>
+                        
+                        <div style="margin-top: 1rem; width: 100%; border-top: 1px solid var(--border); padding-top: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <span style="font-weight: 700; color: var(--primary); font-size: 1.1rem;">${formatLKR(p.price)}</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-clock"></i> ${p.duration}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Vendor: ${p.vendorName}</div>
+                            
+                            <!-- Bottom Center Rating -->
+                            <div style="display: flex; justify-content: center; width: 100%;">
+                                ${ratingHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function showPackageListView() {
+            document.getElementById('categoryView').style.display = 'none';
+            document.getElementById('packagesView').style.display = 'flex';
+            document.getElementById('packageDetailView').style.display = 'none';
+            document.getElementById('backToCats').style.display = 'block';
+            document.getElementById('pageTitle').innerText = activeCategory;
+            document.getElementById('backToCats').onclick = showCategoryView;
+        }
+
+        function updateDurationLabel(val) {
+            document.getElementById('currentDurationLabel').innerText = val + " Guests";
+        }
+
+        function extractDuration(durationStr) {
+            if (!durationStr) return 0;
+            // For venues, duration stores capacity as int
+            const val = parseInt(durationStr);
+            if (!isNaN(val)) return val;
+            
+            const match = durationStr.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        }
+
+        function extractCapacity(desc) {
+            if (!desc) return null;
+            const regex = /(\d+)\s*(?:Pax|Capacity|Guests|people|persons)/i;
+            const match = desc.match(regex);
+            return match ? parseInt(match[1]) : null;
+        }
+
+        async function showPackageDetails(pkg) {
+            selectedPackage = pkg;
+            document.getElementById('categoryView').style.display = 'none';
+            document.getElementById('packagesView').style.display = 'none';
+            document.getElementById('packageDetailView').style.display = 'block';
+            document.getElementById('backToCats').style.display = 'block';
+            document.getElementById('backToCats').onclick = showPackageListView;
+            document.getElementById('pageTitle').innerText = "Package Details";
+
+            const info = document.getElementById('packageDetailContent');
+            const avgRating = pkg.averageRating ? pkg.averageRating.toFixed(1) : "0.0";
+
+            // Show details and loading state for reviews
+            info.innerHTML = `
+                <div style="margin-bottom: 2rem;">
+                    <div style="font-weight: 700; font-size: 2.2rem; margin-bottom: 0.5rem;" class="brand-font">${pkg.title}</div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <span style="color: var(--primary); font-weight: 700; font-size: 1.8rem;">${formatLKR(pkg.price)}</span>
+                            <span class="badge badge-confirmed" style="padding: 0.4rem 0.8rem;">${pkg.duration}</span>
+                        </div>
+                        
+                        <div style="margin-top: 0.5rem;">
+                            <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">
+                                Service provided by <span style="color: var(--text); font-weight: 700;">${pkg.vendorName}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.8rem; margin-top: 0.3rem;">
+                                <div style="display: flex; align-items: center; gap: 0.3rem;">
+                                    ${starRating(Math.round(pkg.averageRating || 0))}
+                                    <span style="font-weight: 700; font-size: 1rem; color: var(--text);">${avgRating}</span>
+                                </div>
+                                <span style="color: var(--text-muted); font-size: 0.85rem;">|</span>
+                                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500;">
+                                    ${pkg.ratingCount} ${pkg.ratingCount === 1 ? 'Review' : 'Reviews'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4 class="brand-font mb-1" style="font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem;">Service Overview</h4>
+                    <p class="text-muted" style="font-size: 1.1rem; line-height: 1.8; color: #444; white-space: pre-line;">
+                        ${pkg.description}
+                    </p>
+                </div>
+            `;
+
+            // Update average rating in the review header too
+            document.getElementById('detailAvgRating').innerHTML = pkg.averageRating
+                ? `<div style="display: flex; align-items: center; gap: 0.5rem;">
+                     ${starRating(Math.round(pkg.averageRating))}
+                     <span style="font-weight: 600;">${pkg.averageRating.toFixed(1)} Rating</span>
+                   </div>`
+                : '';
+
+            // Fetch reviews
+            try {
+                const reviews = await api.get(`/reviews/package/${pkg.packageId}`);
+                const list = document.getElementById('reviewsList');
+
+                if (reviews.length === 0) {
+                    list.innerHTML = '<p class="text-muted" style="font-size: 0.9rem; font-style: italic; background: var(--bg-light); padding: 2rem; border-radius: 8px;">No reviews yet for this package.</p>';
+                } else {
+                    list.style.textAlign = 'left';
+                    list.innerHTML = reviews.map(r => `
+                        <div style="background: #fff; padding: 1.2rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="font-weight: 600; font-size: 0.95rem;">${r.customerName}</span>
+                                <span>${starRating(r.packageRating)}</span>
+                            </div>
+                            <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0; line-height: 1.5;">"${r.packageComment}"</p>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                document.getElementById('reviewsList').innerHTML = '<p class="text-danger">Failed to load reviews.</p>';
+            }
+        }
+
+        document.getElementById('addPackageBtn').onclick = async () => {
+            const user = JSON.parse(localStorage.getItem('ethereal_user'));
+            if (!user) {
+                Swal.fire('Error', 'Please login to add packages', 'error');
+                return;
+            }
+
+            if (!eventId) {
+                Swal.fire('Context Missing', 'Please select an event first from "My Events" page.', 'warning');
+                return;
+            }
+
+            const payload = {
+                eventId: parseInt(eventId),
+                packageId: selectedPackage.packageId,
+                quantity: 1,
+                notes: "Added from package browser"
+            };
+
+            const btn = document.getElementById('addPackageBtn');
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+
+                await api.post('/event-packages', payload);
+
+                Swal.fire({
+                    title: 'Added!',
+                    text: 'Package successfully added to your event.',
+                    icon: 'success',
+                    confirmButtonColor: 'var(--primary)'
+                });
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'Failed to add package to event.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'ADD PACKAGE TO MY EVENT';
+            }
+        };
+
+    </script>
+</body>
+
+</html>

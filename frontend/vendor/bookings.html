@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Bookings | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item" data-page="dashboard">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <a href="packages.html" class="sidebar-item" data-page="packages">
+                    <i class="fas fa-boxes"></i> My Packages
+                </a>
+                <a href="bookings.html" class="sidebar-item active" data-page="bookings">
+                    <i class="fas fa-calendar-check"></i> Bookings
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h2 class="brand-font">Service Requests</h2>
+            </header>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th>Package</th>
+                                <th>Event Date</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendorBookingsTable">
+                            <!-- Data injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['VENDOR']);
+
+        document.addEventListener('DOMContentLoaded', loadVendorBookings);
+
+        async function loadVendorBookings() {
+            showLoader();
+            try {
+                const myRequests = await api.get(`/bookings/vendor/${user.id}`);
+                renderBookings(myRequests);
+            } catch (error) {
+                showToast('Failed to load bookings', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderBookings(bookings) {
+            const tableBody = document.getElementById('vendorBookingsTable');
+            if (bookings.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No service requests found yet.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = bookings.reverse().map(b => {
+                const canManage = b.vendorStatus === 'PENDING';
+                
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">${b.customerName || 'Client'}</div>
+                        </td>
+                        <td>${b.packageTitle || 'Service'}</td>
+                        <td>${formatDate(b.eventDate)}</td>
+                        <td>${b.location || 'Not Set'}</td>
+                        <td>
+                            <div style="margin-bottom: 0.3rem;">${statusBadge(b.eventStatus)}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                                Your Status: <span style="font-weight: 600;">${b.vendorStatus}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                ${canManage ? `
+                                    <button onclick="updateStatus(${b.bookingPackageId}, 'CONFIRMED')" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Confirm</button>
+                                    <button onclick="updateStatus(${b.bookingPackageId}, 'REJECTED')" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; color: var(--danger); border-color: var(--danger);">Decline</button>
+                                ` : '<span class="text-muted" style="font-size: 0.8rem;">Processed</span>'}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function updateStatus(id, status) {
+            const action = status === 'CONFIRMED' ? 'confirm' : 'decline';
+            confirmModal(`Are you sure you want to ${action} this booking?`, async () => {
+                showLoader();
+                try {
+                    // We need a new endpoint to update booking_package status
+                    await api.put(`/bookings/package/${id}/status?status=${status}`);
+                    showToast(`Booking ${status.toLowerCase()}`, 'success');
+                    loadVendorBookings();
+                } catch (error) {
+                    showToast('Failed to update booking status', 'error');
+                } finally {
+                    hideLoader();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

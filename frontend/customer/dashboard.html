@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="events.html" class="sidebar-item" data-page="events">
+                    <i class="fas fa-calendar-alt"></i> My Events
+                </a>
+                <a href="packages.html" class="sidebar-item" data-page="packages">
+                    <i class="fas fa-box-open"></i> Browse Packages
+                </a>
+                <a href="bookings.html" class="sidebar-item" data-page="bookings">
+                    <i class="fas fa-clipboard-list"></i> My Bookings
+                </a>
+                <a href="payments.html" class="sidebar-item" data-page="payments">
+                    <i class="fas fa-wallet"></i> My Payments
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <button id="menuBtn" class="btn btn-outline" style="padding: 0.5rem 0.8rem; display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="brand-font">Dashboard</h2>
+                <div class="user-profile" style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="userName" style="font-weight: 600;">Customer</span>
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                        <span id="userInitial">C</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Stats Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                <div class="card stat-card">
+                    <span class="stat-label">My Events</span>
+                    <span class="stat-value" id="eventCount">0</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="stat-label">Active Bookings</span>
+                    <span class="stat-value" id="bookingCount">0</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="stat-label">Pending Payments</span>
+                    <span class="stat-value" id="paymentCount">0</span>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 class="brand-font">Recent Bookings</h3>
+                    <a href="bookings.html" class="text-primary" style="font-size: 0.9rem; font-weight: 600;">View All</a>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Event Name</th>
+                                <th>Date</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentBookingsTable">
+                            <!-- Data will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mt-2" style="display: flex; gap: 1rem;">
+                <button onclick="window.location.href='events.html'" class="btn btn-primary">Plan New Event</button>
+                <button onclick="window.location.href='packages.html'" class="btn btn-outline">Browse Packages</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        // Auth Guard
+        const user = requireAuth(['CUSTOMER']);
+        if (!user) { /* Redirecting... */ }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!user) return;
+
+            // Set profile info
+            document.getElementById('userName').innerText = user.name;
+            document.getElementById('userInitial').innerText = user.name.charAt(0);
+
+            showLoader();
+            try {
+                // Fetch events
+                const events = await api.get(`/events/customer/${user.id}`);
+                document.getElementById('eventCount').innerText = events.length;
+
+                // Fetch bookings
+                const bookings = await api.get(`/bookings/customer/${user.id}`);
+                const activeBookings = bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING');
+                document.getElementById('bookingCount').innerText = activeBookings.length;
+
+                // Only count payments as pending if the booking is confirmed and ready for payment
+                const pendingPayments = bookings.filter(b => b.paymentStatus === 'PENDING');
+                document.getElementById('paymentCount').innerText = pendingPayments.length;
+
+                // Render recent bookings (last 5)
+                const recent = bookings.slice(-5).reverse();
+                const tableBody = document.getElementById('recentBookingsTable');
+                
+                if (recent.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No bookings found.</td></tr>';
+                } else {
+                    tableBody.innerHTML = recent.map((b, index) => {
+                        return `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${b.eventName || 'N/A'}</td>
+                                <td>${formatDate(b.bookingDate)}</td>
+                                <td style="font-weight: 600; color: var(--primary);">Rs. ${utils.formatCurrency(b.totalCost)}</td>
+                                <td>${statusBadge(b.status)}</td>
+                                <td><a href="bookings.html" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Details</a></td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load dashboard data', 'error');
+            } finally {
+                hideLoader();
+            }
+        });
+    </script>
+    <style>
+        @media (max-width: 1024px) {
+            #menuBtn { display: block !important; }
+        }
+    </style>
+</body>
+</html>
