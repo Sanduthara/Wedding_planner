@@ -51,31 +51,6 @@
             display: flex;
             flex-direction: column;
         }
-        .role-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1rem;
-        }
-        .role-tab {
-            cursor: pointer;
-            padding: 0.5rem 1rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            transition: all 0.3s;
-            border-bottom: 2px solid transparent;
-        }
-        .role-tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
     </style>
 </head>
 <body class="fade-in">
@@ -90,17 +65,11 @@
         </div>
 
         <div class="login-form-area">
-            <h2 class="mb-2">Welcome Back</h2>
-            
-            <div class="role-tabs">
-                <div class="role-tab active" data-role="CUSTOMER">Customer</div>
-                <div class="role-tab" data-role="VENDOR">Vendor</div>
-                <div class="role-tab" data-role="ADMIN">Admin</div>
-            </div>
+            <h2 class="mb-2">Customer Sign In</h2>
 
             <form id="loginForm">
                 <div class="form-group">
-                    <label class="form-label" id="identifierLabel">Username</label>
+                    <label class="form-label" for="identifier">Username or email</label>
                     <input type="text" id="identifier" class="form-control" placeholder="Enter your username" required>
                 </div>
                 <div class="form-group">
@@ -112,7 +81,7 @@
             </form>
 
             <div class="mt-2 text-center">
-                <p class="text-muted" id="signupText">Don't have an account? <a href="customer/register.html" class="text-primary" id="signupLink">Register here</a></p>
+                <p class="text-muted">Don't have an account? <a href="customer/register.html" class="text-primary">Register here</a></p>
             </div>
         </div>
     </div>
@@ -121,38 +90,8 @@
     <script src="js/components.js"></script>
     <script src="js/main.js"></script>
     <script>
-        const roleTabs = document.querySelectorAll('.role-tab');
         const loginForm = document.getElementById('loginForm');
-        const identifierLabel = document.getElementById('identifierLabel');
         const identifierInput = document.getElementById('identifier');
-        const signupText = document.getElementById('signupText');
-        const signupLink = document.getElementById('signupLink');
-        let currentRole = 'CUSTOMER';
-
-        roleTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                roleTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentRole = tab.dataset.role;
-                
-                // Update UI based on role
-                if (currentRole === 'ADMIN') {
-                    identifierLabel.innerText = 'Username';
-                    identifierInput.placeholder = 'Enter your username';
-                    signupText.style.display = 'none';
-                } else if (currentRole === 'VENDOR') {
-                    identifierLabel.innerText = 'Email Address';
-                    identifierInput.placeholder = 'Enter your email';
-                    signupText.style.display = 'block';
-                    signupLink.href = 'vendor/register.html';
-                } else {
-                    identifierLabel.innerText = 'Username';
-                    identifierInput.placeholder = 'Enter your username';
-                    signupText.style.display = 'block';
-                    signupLink.href = 'customer/register.html';
-                }
-            });
-        });
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -163,18 +102,11 @@
             utils.setLoading(loginBtn, true, 'Signing In...');
 
             try {
-                let endpoint = '';
-                if (currentRole === 'CUSTOMER') endpoint = '/auth/customer/login';
-                else if (currentRole === 'VENDOR') endpoint = '/auth/vendor/login';
-                else if (currentRole === 'ADMIN') endpoint = '/auth/admin/login';
-
-                const response = await api.post(endpoint, {
+                const response = await api.post('/auth/customer/login', {
                     username: identifier, // Backend LoginRequestDTO uses 'username' field for both email/username
                     password: password
                 }, false);
 
-                // response: { token, role, user: { id, name, email, role } }
-                // Store in localStorage as 'ethereal_user'
                 const sessionData = {
                     id: response.user.id,
                     name: response.user.name,
@@ -186,12 +118,8 @@
                 localStorage.setItem('ethereal_user', JSON.stringify(sessionData));
                 
                 showToast(`Welcome back, ${sessionData.name}!`, 'success');
-                
-                // Redirect based on role
                 setTimeout(() => {
-                    if (sessionData.role === 'CUSTOMER') window.location.href = 'customer/dashboard.html';
-                    else if (sessionData.role === 'VENDOR') window.location.href = 'vendor/dashboard.html';
-                    else if (sessionData.role === 'ADMIN') window.location.href = 'admin/dashboard.html';
+                    window.location.href = 'customer/bookings.html';
                 }, 1000);
 
             } catch (error) {

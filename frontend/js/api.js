@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8080/api';
+const BASE_URL = 'http://localhost:8081/api';
 
 const api = {
     async request(method, endpoint, body = null, auth = true) {
@@ -66,13 +66,5 @@ const api = {
     get: (url, auth = true) => api.request('GET', url, null, auth),
     post: (url, body, auth = true) => api.request('POST', url, body, auth),
     put: (url, body, auth = true) => api.request('PUT', url, body, auth),
-    delete: (url, auth = true) => api.request('DELETE', url, null, auth),
-
-    // Convenience methods for auth/registration
-    customers: {
-        register: (data) => api.post('/customers', data, false),
-    },
-    vendors: {
-        register: (data) => api.post('/vendors', data, false),
-    }
+    delete: (url, auth = true) => api.request('DELETE', url, null, auth)
 };
