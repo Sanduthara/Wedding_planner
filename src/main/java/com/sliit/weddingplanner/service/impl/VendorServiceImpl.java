@@ -5,6 +5,7 @@ import com.sliit.weddingplanner.exception.DuplicateRecordException;
 import com.sliit.weddingplanner.exception.ResourceNotFoundException;
 import com.sliit.weddingplanner.repository.VendorRepository;
 import com.sliit.weddingplanner.repository.PackageRepository;
+import com.sliit.weddingplanner.security.PasswordService;
 import com.sliit.weddingplanner.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,11 +21,16 @@ public class VendorServiceImpl implements VendorService {
 
     private final VendorRepository vendorRepository;
     private final PackageRepository packageRepository;
+    private final PasswordService passwordService;
 
     @Autowired
-    public VendorServiceImpl(VendorRepository vendorRepository, PackageRepository packageRepository) {
+    public VendorServiceImpl(
+            VendorRepository vendorRepository,
+            PackageRepository packageRepository,
+            PasswordService passwordService) {
         this.vendorRepository = vendorRepository;
         this.packageRepository = packageRepository;
+        this.passwordService = passwordService;
     }
 
     @Override
@@ -38,9 +44,11 @@ public class VendorServiceImpl implements VendorService {
         if (vendorRepository.existsByPhone(vendorDTO.getPhone())) {
             throw new DuplicateRecordException("Phone number already in use");
         }
-        // Password encoding removed
+        vendorDTO.setPassword(passwordService.encode(vendorDTO.getPassword()));
         vendorDTO.setStatus("PENDING");
-        return vendorRepository.save(vendorDTO);
+        VendorDTO created = vendorRepository.save(vendorDTO);
+        created.setPassword(null);
+        return created;
     }
 
     @Override
@@ -64,9 +72,11 @@ public class VendorServiceImpl implements VendorService {
         existing.setAvailability(user.getAvailability());
         existing.setStatus(user.getStatus());
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
-            existing.setPassword(user.getPassword());
+            existing.setPassword(passwordService.encode(user.getPassword()));
         }
-        return vendorRepository.update(existing);
+        VendorDTO updated = vendorRepository.update(existing);
+        updated.setPassword(null);
+        return updated;
     }
 
     @Override

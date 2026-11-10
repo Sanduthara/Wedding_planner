@@ -93,15 +93,13 @@
             <h2 class="mb-2">Welcome Back</h2>
             
             <div class="role-tabs">
-                <div class="role-tab active" data-role="CUSTOMER">Customer</div>
-                <div class="role-tab" data-role="VENDOR">Vendor</div>
-                <div class="role-tab" data-role="ADMIN">Admin</div>
+                <div class="role-tab active" data-role="VENDOR">Vendor</div>
             </div>
 
             <form id="loginForm">
                 <div class="form-group">
-                    <label class="form-label" id="identifierLabel">Username</label>
-                    <input type="text" id="identifier" class="form-control" placeholder="Enter your username" required>
+                    <label class="form-label" id="identifierLabel">Email Address</label>
+                    <input type="email" id="identifier" class="form-control" placeholder="Enter your email" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password</label>
@@ -112,7 +110,7 @@
             </form>
 
             <div class="mt-2 text-center">
-                <p class="text-muted" id="signupText">Don't have an account? <a href="customer/register.html" class="text-primary" id="signupLink">Register here</a></p>
+                <p class="text-muted" id="signupText">Don't have an account? <a href="vendor/register.html" class="text-primary" id="signupLink">Register here</a></p>
             </div>
         </div>
     </div>
@@ -127,7 +125,7 @@
         const identifierInput = document.getElementById('identifier');
         const signupText = document.getElementById('signupText');
         const signupLink = document.getElementById('signupLink');
-        let currentRole = 'CUSTOMER';
+        let currentRole = 'VENDOR';
 
         roleTabs.forEach(tab => {
             tab.addEventListener('click', () => {

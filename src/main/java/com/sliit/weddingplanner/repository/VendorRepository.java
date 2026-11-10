@@ -159,7 +159,9 @@ public class VendorRepository {
     }
 
     public VendorDTO update(VendorDTO vendorDTO) {
-        String sql = "UPDATE vendor SET name=?, username=?, email=?, phone=?, availability=?, status=?, password=? WHERE vendor_id=?";
+        String sql = vendorDTO.getPassword() == null
+                ? "UPDATE vendor SET name=?, username=?, email=?, phone=?, availability=?, status=? WHERE vendor_id=?"
+                : "UPDATE vendor SET name=?, username=?, email=?, phone=?, availability=?, status=?, password=? WHERE vendor_id=?";
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, vendorDTO.getName());
@@ -168,8 +170,12 @@ public class VendorRepository {
             ps.setString(4, vendorDTO.getPhone());
             ps.setString(5, vendorDTO.getAvailability());
             ps.setString(6, vendorDTO.getStatus());
-            ps.setString(7, vendorDTO.getPassword());
-            ps.setInt(8, vendorDTO.getId());
+            if (vendorDTO.getPassword() == null) {
+                ps.setInt(7, vendorDTO.getId());
+            } else {
+                ps.setString(7, vendorDTO.getPassword());
+                ps.setInt(8, vendorDTO.getId());
+            }
             ps.executeUpdate();
             return vendorDTO;
         } catch (SQLException e) {

@@ -18,5 +18,5 @@ public interface BookingService {
     BookingDTO confirmEvent(int eventId, String location, String paymentType);
     List<com.sliit.weddingplanner.dto.BookingPackageDTO> getBookingPackages(int bookingId);
     List<com.sliit.weddingplanner.dto.BookingPackageDTO> getVendorBookings(int vendorId);
-    void updateBookingPackageStatus(int id, String status, String reason);
+    void updateBookingPackageStatus(int id, String status, String reason, int vendorId);
 }

@@ -1,6 +1,8 @@
 package com.sliit.weddingplanner.controller;
 
 import com.sliit.weddingplanner.dto.ReviewDTO;
+import com.sliit.weddingplanner.security.AuthTokenService;
+import com.sliit.weddingplanner.security.AuthenticatedUser;
 import com.sliit.weddingplanner.service.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 // OOP: Encapsulation
 // OOP: Dependency Injection
@@ -17,10 +22,12 @@ import java.util.List;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final AuthTokenService authTokenService;
 
     @Autowired
-    public ReviewController(ReviewService reviewService) {
+    public ReviewController(ReviewService reviewService, AuthTokenService authTokenService) {
         this.reviewService = reviewService;
+        this.authTokenService = authTokenService;
     }
 
     @PostMapping
@@ -41,6 +48,17 @@ public class ReviewController {
     @GetMapping("/package/{packageId}")
     public ResponseEntity<List<ReviewDTO>> getReviewsByPackage(@PathVariable int packageId) {
         return ResponseEntity.ok(reviewService.getReviewsByPackage(packageId));
+    }
+
+    @GetMapping("/vendor/{vendorId}")
+    public ResponseEntity<List<ReviewDTO>> getReviewsByVendor(
+            @PathVariable int vendorId,
+            HttpServletRequest request) {
+        AuthenticatedUser user = authTokenService.requireUser(request);
+        if (user.id() != vendorId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own reviews");
+        }
+        return ResponseEntity.ok(reviewService.getReviewsByVendor(vendorId));
     }
 
     @DeleteMapping("/{id}")

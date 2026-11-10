@@ -5,8 +5,10 @@ import com.sliit.weddingplanner.exception.ResourceNotFoundException;
 import com.sliit.weddingplanner.repository.*;
 import com.sliit.weddingplanner.service.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -164,9 +166,19 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public void updateBookingPackageStatus(int id, String status, String reason) {
+    public void updateBookingPackageStatus(int id, String status, String reason, int vendorId) {
         System.out.println("DEBUG: Updating status for package ID: " + id + " to " + status);
-        
+
+        if (!"CONFIRMED".equals(status) && !"REJECTED".equals(status)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vendor response status");
+        }
+        if ("REJECTED".equals(status) && (reason == null || reason.isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A reason is required when declining a booking");
+        }
+        if (bookingPackageRepository.getVendorIdByBookingPackageId(id) != vendorId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this booking request");
+        }
+
         // 1. Update the individual package status
         bookingPackageRepository.updateVendorStatus(id, status, reason);
         

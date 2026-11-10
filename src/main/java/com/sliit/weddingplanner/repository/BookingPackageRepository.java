@@ -74,6 +74,23 @@ public class BookingPackageRepository {
         return -1;
     }
 
+    public int getVendorIdByBookingPackageId(int bookingPackageId) {
+        String sql = "SELECT p.vendor_id FROM booking_package bp " +
+                     "JOIN event_package ep ON bp.event_package_id = ep.event_package_id " +
+                     "JOIN package p ON ep.package_id = p.package_id " +
+                     "WHERE bp.booking_package_id = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bookingPackageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("vendor_id");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error getting vendor for booking package", e);
+        }
+        return -1;
+    }
+
     public void updateVendorStatus(int id, String status, String rejectionReason) {
         String sql = "UPDATE booking_package SET vendor_status = ?, rejection_reason = ?, vendor_responded_at = CURRENT_TIMESTAMP WHERE booking_package_id = ?";
         try (Connection conn = dbConnection.getConnection();

@@ -4,6 +4,7 @@ import com.sliit.weddingplanner.dto.AdminDTO;
 import com.sliit.weddingplanner.exception.DuplicateRecordException;
 import com.sliit.weddingplanner.exception.ResourceNotFoundException;
 import com.sliit.weddingplanner.repository.AdminRepository;
+import com.sliit.weddingplanner.security.PasswordService;
 import com.sliit.weddingplanner.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,12 @@ import java.util.List;
 public class AdminServiceImpl implements AdminService {
 
     private final AdminRepository adminRepository;
+    private final PasswordService passwordService;
 
     @Autowired
-    public AdminServiceImpl(AdminRepository adminRepository) {
+    public AdminServiceImpl(AdminRepository adminRepository, PasswordService passwordService) {
         this.adminRepository = adminRepository;
+        this.passwordService = passwordService;
     }
 
     @Override
@@ -29,9 +32,11 @@ public class AdminServiceImpl implements AdminService {
         if (adminRepository.existsByUsernameOrEmail(adminDTO.getUsername(), adminDTO.getEmail())) {
             throw new DuplicateRecordException("Username or email already exists");
         }
-        // Password encoding removed
+        adminDTO.setPassword(passwordService.encode(adminDTO.getPassword()));
         adminDTO.setRole("ROLE_ADMIN");
-        return adminRepository.save(adminDTO);
+        AdminDTO created = adminRepository.save(adminDTO);
+        created.setPassword(null);
+        return created;
     }
 
     @Override
