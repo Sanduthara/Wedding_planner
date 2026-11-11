@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Vendors | Ethereal Weddings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header style="position: relative; margin-bottom: 50px;">
+        <div class="container">
+            <a href="index.html" class="logo">ETHEREAL</a>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html#services">Services</a></li>
+                    <li><a href="vendors.html" style="color: var(--primary);">Vendors</a></li>
+                    <li><a href="bookings.html">My Bookings</a></li>
+                </ul>
+            </nav>
+            <a href="login.html" class="btn-login">Login</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="section-title">
+            <h2>Our Featured Vendors</h2>
+            <p>Hand-picked professionals for your special day.</p>
+            <div class="underline"></div>
+        </div>
+
+        <div class="services-grid" style="margin-bottom: 100px;">
+            <!-- Vendor 1 -->
+            <div class="service-card" style="padding: 0; overflow: hidden; text-align: left;">
+                <img src="assets/img/wedding_photography.png" style="height: 200px; width: 100%; object-fit: cover;">
+                <div style="padding: 20px;">
+                    <span style="color: var(--primary); font-weight: 600; font-size: 12px; text-transform: uppercase;">Photography</span>
+                    <h3 style="margin: 10px 0;">Golden Hour Studios</h3>
+                    <p style="font-size: 14px; color: var(--text-light); margin-bottom: 20px;">Specializing in cinematic wedding films and timeless photography.</p>
+                    <a href="#" class="btn-login" style="display: block; text-align: center;">View Profile</a>
+                </div>
+            </div>
+
+            <!-- Vendor 2 -->
+            <div class="service-card" style="padding: 0; overflow: hidden; text-align: left;">
+                <img src="assets/img/wedding_catering.png" style="height: 200px; width: 100%; object-fit: cover;">
+                <div style="padding: 20px;">
+                    <span style="color: var(--primary); font-weight: 600; font-size: 12px; text-transform: uppercase;">Catering</span>
+                    <h3 style="margin: 10px 0;">Royal Banquets</h3>
+                    <p style="font-size: 14px; color: var(--text-light); margin-bottom: 20px;">Fine dining and exquisite service for events of all sizes.</p>
+                    <a href="#" class="btn-login" style="display: block; text-align: center;">View Profile</a>
+                </div>
+            </div>
+
+            <!-- Vendor 3 -->
+            <div class="service-card" style="padding: 0; overflow: hidden; text-align: left;">
+                <img src="assets/img/wedding_venue.png" style="height: 200px; width: 100%; object-fit: cover;">
+                <div style="padding: 20px;">
+                    <span style="color: var(--primary); font-weight: 600; font-size: 12px; text-transform: uppercase;">Venue</span>
+                    <h3 style="margin: 10px 0;">Starlight Estate</h3>
+                    <p style="font-size: 14px; color: var(--text-light); margin-bottom: 20px;">A magical garden setting with historical charm and modern luxury.</p>
+                    <a href="#" class="btn-login" style="display: block; text-align: center;">View Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer style="background: var(--secondary); color: white; padding: 50px 0; text-align: center;">
+        <div class="container">
+            <h2 class="logo" style="color: white; margin-bottom: 20px;">ETHEREAL</h2>
+            <p>&copy; 2024 Ethereal Wedding Planner. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        async function loadVendors() {
+            const container = document.querySelector('.services-grid');
+            try {
+                const vendors = await api.vendors.getAll();
+                container.innerHTML = ''; // Clear static data
+                
+                vendors.forEach(vendor => {
+                    const card = `
+                        <div class="service-card" style="padding: 0; overflow: hidden; text-align: left;">
+                            <img src="${vendor.imageUrl || 'assets/img/wedding_photography.png'}" style="height: 200px; width: 100%; object-fit: cover;">
+                            <div style="padding: 20px;">
+                                <span style="color: var(--primary); font-weight: 600; font-size: 12px; text-transform: uppercase;">${vendor.category || 'Vendor'}</span>
+                                <h3 style="margin: 10px 0;">${vendor.companyName || vendor.name}</h3>
+                                <p style="font-size: 14px; color: var(--text-light); margin-bottom: 20px;">${vendor.description || 'Professional wedding service provider.'}</p>
+                                <a href="#" class="btn-login" style="display: block; text-align: center;">View Profile</a>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += card;
+                });
+            } catch (error) {
+                console.error('Failed to load vendors:', error);
+                container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Failed to load vendors. Please ensure the backend is running.</p>';
+            }
+        }
+        window.addEventListener('DOMContentLoaded', loadVendors);
+    </script>
+    <script src="js/main.js"></script>
+</body>
+</html>

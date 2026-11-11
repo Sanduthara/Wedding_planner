@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethereal Weddings | Luxury Wedding Planning</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .hero {
+            height: 90vh;
+            background: linear-gradient(rgba(44, 44, 44, 0.4), rgba(44, 44, 44, 0.4)), url('https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+        }
+        .hero-content h1 {
+            font-size: 4.5rem;
+            margin-bottom: 1rem;
+            letter-spacing: 4px;
+        }
+        .hero-content p {
+            font-size: 1.25rem;
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        .nav-home {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="nav-home container">
+        <a href="index.html" style="text-decoration: none;"><h1 class="brand-font" style="color: var(--primary); font-size: 2rem;">Ethereal</h1></a>
+        <div style="display: flex; gap: 2rem; align-items: center;">
+            <a href="login.html" class="btn btn-outline" style="color: #fff; border-color: #fff;">Sign In</a>
+            <a href="customer/register.html" class="btn btn-primary">Start Planning</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content container fade-in">
+            <h1 class="brand-font">Your Dream, <br> Refined.</h1>
+            <p>Bespoke planning for the world's most exquisite celebrations. From grand ballrooms to intimate shores.</p>
+            <div style="display: flex; gap: 1.5rem; justify-content: center;">
+                <a href="customer/register.html" class="btn btn-primary" style="padding: 1.2rem 2.5rem; font-size: 1rem;">Join as Couple</a>
+                <a href="vendor/register.html" class="btn btn-outline" style="padding: 1.2rem 2.5rem; font-size: 1rem; color: #fff; border-color: #fff;">Join as Vendor</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="container mt-2 mb-2">
+        <div class="text-center mb-2">
+            <h2 class="brand-font" style="font-size: 2.5rem;">The Ethereal Experience</h2>
+            <div style="width: 60px; height: 3px; background: var(--primary); margin: 1rem auto;"></div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+            <div class="card text-center">
+                <i class="fas fa-magic" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1.5rem;"></i>
+                <h3 class="brand-font mb-1">Curated Packages</h3>
+                <p class="text-muted">Explore hand-picked services from top-tier floral, catering, and decor vendors.</p>
+            </div>
+            <div class="card text-center">
+                <i class="fas fa-calendar-check" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1.5rem;"></i>
+                <h3 class="brand-font mb-1">Seamless Booking</h3>
+                <p class="text-muted">Manage your entire timeline and service contracts in one elegant interface.</p>
+            </div>
+            <div class="card text-center">
+                <i class="fas fa-star" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1.5rem;"></i>
+                <h3 class="brand-font mb-1">Elite Vendors</h3>
+                <p class="text-muted">Only the most refined service providers are approved to join our exclusive platform.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer style="background: var(--secondary); color: rgba(255,255,255,0.6); padding: 4rem 0; margin-top: 4rem;">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 class="brand-font" style="color: var(--primary);">Ethereal Weddings</h2>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">Crafting moments of pure magic since 2024.</p>
+            </div>
+            <div style="display: flex; gap: 2rem;">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+        <div class="container mt-2" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem; text-align: center; font-size: 0.8rem;">
+            &copy; 2024 Ethereal Weddings Management System. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

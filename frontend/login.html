@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Ethereal Weddings</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            display: flex;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            width: 900px;
+            max-width: 95%;
+            min-height: 600px;
+        }
+        .login-brand {
+            flex: 1;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: #fff;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-brand::after {
+            content: 'E';
+            position: absolute;
+            bottom: -50px;
+            right: -20px;
+            font-size: 300px;
+            font-family: 'Playfair Display', serif;
+            opacity: 0.05;
+        }
+        .login-form-area {
+            flex: 1;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .role-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+        .role-tab {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .role-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="fade-in">
+
+    <div class="login-container">
+        <div class="login-brand">
+            <a href="index.html" style="text-decoration: none; color: inherit;">
+                <h1 class="brand-font" style="font-size: 3rem; color: var(--primary);">Ethereal</h1>
+                <h2 class="brand-font" style="font-size: 1.5rem; margin-bottom: 1.5rem;">Weddings</h2>
+            </a>
+            <p style="font-size: 1.1rem; opacity: 0.8;">Refined planning for your most precious moments.</p>
+        </div>
+
+        <div class="login-form-area">
+            <h2 class="mb-2">Welcome Back</h2>
+            
+            <div class="role-tabs">
+                <div class="role-tab active" data-role="CUSTOMER">Customer</div>
+                <div class="role-tab" data-role="VENDOR">Vendor</div>
+                <div class="role-tab" data-role="ADMIN">Admin</div>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" id="identifierLabel">Username</label>
+                    <input type="text" id="identifier" class="form-control" placeholder="Enter your username" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100" style="width: 100%;" id="loginBtn">Sign In</button>
+            </form>
+
+            <div class="mt-2 text-center">
+                <p class="text-muted" id="signupText">Don't have an account? <a href="customer/register.html" class="text-primary" id="signupLink">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        const roleTabs = document.querySelectorAll('.role-tab');
+        const loginForm = document.getElementById('loginForm');
+        const identifierLabel = document.getElementById('identifierLabel');
+        const identifierInput = document.getElementById('identifier');
+        const signupText = document.getElementById('signupText');
+        const signupLink = document.getElementById('signupLink');
+        let currentRole = 'CUSTOMER';
+
+        roleTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                roleTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentRole = tab.dataset.role;
+                
+                // Update UI based on role
+                if (currentRole === 'ADMIN') {
+                    identifierLabel.innerText = 'Username';
+                    identifierInput.placeholder = 'Enter your username';
+                    signupText.style.display = 'none';
+                } else if (currentRole === 'VENDOR') {
+                    identifierLabel.innerText = 'Email Address';
+                    identifierInput.placeholder = 'Enter your email';
+                    signupText.style.display = 'block';
+                    signupLink.href = 'vendor/register.html';
+                } else {
+                    identifierLabel.innerText = 'Username';
+                    identifierInput.placeholder = 'Enter your username';
+                    signupText.style.display = 'block';
+                    signupLink.href = 'customer/register.html';
+                }
+            });
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identifier = identifierInput.value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+
+            utils.setLoading(loginBtn, true, 'Signing In...');
+
+            try {
+                let endpoint = '';
+                if (currentRole === 'CUSTOMER') endpoint = '/auth/customer/login';
+                else if (currentRole === 'VENDOR') endpoint = '/auth/vendor/login';
+                else if (currentRole === 'ADMIN') endpoint = '/auth/admin/login';
+
+                const response = await api.post(endpoint, {
+                    username: identifier, // Backend LoginRequestDTO uses 'username' field for both email/username
+                    password: password
+                }, false);
+
+                // response: { token, role, user: { id, name, email, role } }
+                // Store in localStorage as 'ethereal_user'
+                const sessionData = {
+                    id: response.user.id,
+                    name: response.user.name,
+                    email: response.user.email,
+                    role: response.role.replace('ROLE_', ''), // Convert ROLE_ADMIN -> ADMIN
+                    token: response.token
+                };
+
+                localStorage.setItem('ethereal_user', JSON.stringify(sessionData));
+                
+                showToast(`Welcome back, ${sessionData.name}!`, 'success');
+                
+                // Redirect based on role
+                setTimeout(() => {
+                    if (sessionData.role === 'CUSTOMER') window.location.href = 'customer/dashboard.html';
+                    else if (sessionData.role === 'VENDOR') window.location.href = 'vendor/dashboard.html';
+                    else if (sessionData.role === 'ADMIN') window.location.href = 'admin/dashboard.html';
+                }, 1000);
+
+            } catch (error) {
+                showToast(error.message || 'Invalid credentials', 'error');
+            } finally {
+                utils.setLoading(loginBtn, false, 'Sign In');
+            }
+        });
+    </script>
+</body>
+</html>

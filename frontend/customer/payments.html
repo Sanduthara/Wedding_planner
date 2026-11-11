@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Payments | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .payment-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            transition: transform 0.3s;
+        }
+        .payment-card:hover {
+            transform: translateY(-5px);
+        }
+        .amount-display {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 1rem 0;
+        }
+        .payment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 5rem;
+            background: #fff;
+            border-radius: 20px;
+            border: 2px dashed var(--border);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-font sidebar-logo">Ethereal</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-item" data-page="dashboard">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="events.html" class="sidebar-item" data-page="events">
+                    <i class="fas fa-calendar-alt"></i> My Events
+                </a>
+                <a href="packages.html" class="sidebar-item" data-page="packages">
+                    <i class="fas fa-box-open"></i> Browse Packages
+                </a>
+                <a href="bookings.html" class="sidebar-item" data-page="bookings">
+                    <i class="fas fa-clipboard-list"></i> My Bookings
+                </a>
+                <a href="payments.html" class="sidebar-item active" data-page="payments">
+                    <i class="fas fa-wallet"></i> My Payments
+                </a>
+            </nav>
+            <div style="padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <a href="#" onclick="logout()" class="sidebar-item" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h2 class="brand-font">My Payments</h2>
+                <div class="user-profile" style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="userName" style="font-weight: 600;">Customer</span>
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                        <span id="userInitial">C</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="section-header mt-2">
+                <h3 class="brand-font">Pending Payments</h3>
+                <p class="text-muted">Invoices ready for payment</p>
+            </div>
+
+            <div id="pendingPayments" class="payment-grid">
+                <!-- Pending payments injected here -->
+            </div>
+
+            <div class="section-header mt-4">
+                <h3 class="brand-font">Payment History</h3>
+                <p class="text-muted">Your past transactions</p>
+            </div>
+
+            <div id="paymentHistory">
+                <div class="card p-0" style="overflow: hidden;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Type</th>
+                                <th>Paid Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- History injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const user = requireAuth(['CUSTOMER']);
+        
+        document.addEventListener('DOMContentLoaded', init);
+
+        async function init() {
+            // Set user profile info
+            document.getElementById('userName').innerText = user.name || 'Customer';
+            document.getElementById('userInitial').innerText = (user.name || 'C').charAt(0);
+
+            showLoader();
+            try {
+                const payments = await api.get(`/payments/customer/${user.id}`);
+                renderPayments(payments);
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load payments', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderPayments(payments) {
+            const pendingContainer = document.getElementById('pendingPayments');
+            const historyTable = document.getElementById('historyTableBody');
+            
+            const pending = payments.filter(p => p.status === 'PENDING');
+            const history = payments.filter(p => p.status !== 'PENDING' && p.status !== 'PROCESSING');
+
+            // Render Pending
+            if (pending.length === 0) {
+                pendingContainer.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1; padding: 3rem;">
+                        <i class="fas fa-check-circle" style="font-size: 2.5rem; color: var(--success); margin-bottom: 1rem;"></i>
+                        <h4 class="brand-font">No pending payments</h4>
+                        <p class="text-muted">All your invoices are up to date.</p>
+                    </div>
+                `;
+            } else {
+                pendingContainer.innerHTML = pending.map(p => `
+                    <div class="payment-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <span class="badge badge-pending" style="margin-bottom: 0.5rem;">${p.paymentType} PLAN</span>
+                                <h4 class="brand-font" style="font-size: 1.4rem;">${p.eventName || 'Wedding Booking'}</h4>
+                                <p class="text-muted" style="font-size: 0.9rem;">Booking ID: #${p.bookingId}</p>
+                            </div>
+                            <i class="fas fa-file-invoice-dollar" style="font-size: 1.5rem; color: var(--primary); opacity: 0.5;"></i>
+                        </div>
+                        
+                        <div class="amount-display">${formatLKR(p.dueAmount)}</div>
+                        
+                        <div style="background: var(--bg-light); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                <span class="text-muted">Total Amount:</span>
+                                <span style="font-weight: 600;">${formatLKR(p.totalAmount)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                                <span class="text-muted">Paid So Far:</span>
+                                <span style="font-weight: 600; color: var(--success);">${formatLKR(p.amount)}</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="processPayment(${p.paymentId}, ${p.dueAmount})" class="btn btn-primary w-100" style="padding: 1rem; border-radius: 12px; font-weight: 700;">
+                            <i class="fas fa-credit-card"></i> PAY NOW
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Render History
+            if (history.length === 0) {
+                historyTable.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No payment history found.</td></tr>';
+            } else {
+                historyTable.innerHTML = history.map(p => `
+                    <tr>
+                        <td style="font-weight: 600;">${p.eventName || 'Wedding Booking'}</td>
+                        <td><span class="badge" style="background: #f0f0f0; color: #666;">${p.paymentType}</span></td>
+                        <td>${formatDate(p.paymentDate)}</td>
+                        <td style="font-weight: 700; color: var(--primary);">${formatLKR(p.totalAmount)}</td>
+                        <td>${statusBadge(p.status)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function processPayment(paymentId, amount) {
+            // 1. Select Payment Plan
+            const { value: plan } = await Swal.fire({
+                title: 'Choose Payment Plan',
+                html: `
+                    <div style="text-align: left; padding: 0 1rem;">
+                        <p class="text-muted mb-2">How would you like to pay for this event?</p>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; cursor: pointer;">
+                                <input type="radio" name="swalPlan" value="FULL" checked style="margin-top: 0.3rem;">
+                                <div>
+                                    <div style="font-weight: 700;">Full Payment</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Pay the total amount of ${formatLKR(amount)} now to secure everything.</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; cursor: pointer;">
+                                <input type="radio" name="swalPlan" value="MILESTONE" style="margin-top: 0.3rem;">
+                                <div>
+                                    <div style="font-weight: 700;">Milestone Plan</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Pay in installments. Pay the first milestone today.</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'NEXT',
+                confirmButtonColor: '#b7935e',
+                preConfirm: () => {
+                    return document.querySelector('input[name="swalPlan"]:checked').value;
+                }
+            });
+
+            if (!plan) return;
+
+            // 2. Select Payment Method
+            const { value: method } = await Swal.fire({
+                title: 'Select Payment Method',
+                text: `Finalizing ${plan === 'FULL' ? 'Full Payment' : 'Milestone Payment'} of ${formatLKR(amount)}`,
+                input: 'select',
+                inputOptions: {
+                    'CARD': 'Credit / Debit Card',
+                    'BANK': 'Bank Transfer',
+                    'CASH': 'Cash at Office'
+                },
+                inputPlaceholder: 'Select payment method',
+                showCancelButton: true,
+                confirmButtonText: 'PROCEED TO PAY',
+                confirmButtonColor: '#b7935e'
+            });
+
+            if (method) {
+                showLoader();
+                try {
+                    // Update status and payment type
+                    await api.put(`/payments/${paymentId}/status?status=PAID&paymentType=${plan}`);
+                    
+                    hideLoader();
+                    await Swal.fire({
+                        title: 'Payment Successful!',
+                        text: 'Your payment has been processed and your booking is now secured.',
+                        icon: 'success',
+                        confirmButtonColor: '#b7935e'
+                    });
+                    init(); // Refresh
+                } catch (error) {
+                    hideLoader();
+                    showToast('Payment processing failed', 'error');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

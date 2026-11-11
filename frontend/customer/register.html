@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Register | Ethereal Weddings</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="fade-in" style="background-color: var(--bg-light); display: flex; align-items: center; justify-content: center; padding: 2rem;">
+
+    <div class="card" style="width: 100%; max-width: 600px;">
+        <div class="text-center mb-2">
+            <h1 class="brand-font" style="color: var(--primary);">Join Ethereal</h1>
+            <p class="text-muted">Begin your journey to a perfect wedding.</p>
+        </div>
+
+        <form id="registerForm">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <select id="title" class="form-control" required>
+                        <option value="Mr">Mr</option>
+                        <option value="Mrs">Mrs</option>
+                        <option value="Ms">Ms</option>
+                        <option value="Dr">Dr</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="name" class="form-control" placeholder="John Doe" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="johndoe" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Your Role</label>
+                    <select id="role" class="form-control" required>
+                        <option value="Bride">Bride</option>
+                        <option value="Groom">Groom</option>
+                        <option value="Planner">Planner</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Partner's Name</label>
+                <input type="text" id="otherPartyName" class="form-control" placeholder="Jane Doe">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="email" class="form-control" placeholder="john@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" id="phone" class="form-control" placeholder="07XXXXXXXX" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" style="width: 100%;" id="submitBtn">Create Account</button>
+        </form>
+
+        <div class="mt-2 text-center">
+            <p class="text-muted">Already have an account? <a href="../login.html" class="text-primary">Sign in here</a></p>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            utils.setLoading(submitBtn, true, 'Creating Account...');
+
+            const payload = {
+                title: document.getElementById('title').value,
+                name: document.getElementById('name').value,
+                username: document.getElementById('username').value,
+                customerRole: document.getElementById('role').value,
+                otherPartyName: document.getElementById('otherPartyName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                password: password
+            };
+
+            try {
+                await api.post('/customers', payload, false);
+                showToast('Registration successful! Please login.', 'success');
+                setTimeout(() => {
+                    window.location.href = '../login.html';
+                }, 1500);
+            } catch (error) {
+                showToast(error.message || 'Registration failed', 'error');
+            } finally {
+                utils.setLoading(submitBtn, false, 'Create Account');
+            }
+        });
+    </script>
+</body>
+</html>
