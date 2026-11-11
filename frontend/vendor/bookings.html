@@ -119,15 +119,26 @@
 
         async function updateStatus(id, status) {
             const action = status === 'CONFIRMED' ? 'confirm' : 'decline';
+            let reason = null;
+            if (status === 'REJECTED') {
+                reason = prompt('Please provide a reason for declining this booking:');
+                if (reason === null) return;
+                reason = reason.trim();
+                if (!reason) {
+                    showToast('A reason is required to decline a booking', 'warning');
+                    return;
+                }
+            }
             confirmModal(`Are you sure you want to ${action} this booking?`, async () => {
                 showLoader();
                 try {
-                    // We need a new endpoint to update booking_package status
-                    await api.put(`/bookings/package/${id}/status?status=${status}`);
+                    const params = new URLSearchParams({ status });
+                    if (reason) params.set('reason', reason);
+                    await api.put(`/bookings/package/${id}/status?${params.toString()}`);
                     showToast(`Booking ${status.toLowerCase()}`, 'success');
                     loadVendorBookings();
                 } catch (error) {
-                    showToast('Failed to update booking status', 'error');
+                    showToast(error.message || 'Failed to update booking status', 'error');
                 } finally {
                     hideLoader();
                 }

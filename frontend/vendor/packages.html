@@ -147,8 +147,7 @@
 
         async function loadMyPackages() {
             try {
-                const allPkgs = await api.get('/packages');
-                const myPkgs = allPkgs.filter(p => p.vendorId === user.id);
+                const myPkgs = await api.get(`/packages/vendor/${user.id}`);
                 renderPackages(myPkgs);
             } catch (e) { showToast('Failed to load packages', 'error'); }
         }

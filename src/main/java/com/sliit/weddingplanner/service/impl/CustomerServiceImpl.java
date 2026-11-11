@@ -4,6 +4,7 @@ import com.sliit.weddingplanner.dto.CustomerDTO;
 import com.sliit.weddingplanner.exception.DuplicateRecordException;
 import com.sliit.weddingplanner.exception.ResourceNotFoundException;
 import com.sliit.weddingplanner.repository.CustomerRepository;
+import com.sliit.weddingplanner.security.PasswordService;
 import com.sliit.weddingplanner.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,12 @@ import java.util.List;
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final PasswordService passwordService;
     
     @Autowired
-    public CustomerServiceImpl(CustomerRepository customerRepository) {
+    public CustomerServiceImpl(CustomerRepository customerRepository, PasswordService passwordService) {
         this.customerRepository = customerRepository;
+        this.passwordService = passwordService;
     }
 
     @Override
@@ -35,8 +38,10 @@ public class CustomerServiceImpl implements CustomerService {
         if (customerRepository.existsByPhone(customerDTO.getPhone())) {
             throw new DuplicateRecordException("Phone number already in use");
         }
-        // Password encoding removed
-        return customerRepository.save(customerDTO);
+        customerDTO.setPassword(passwordService.encode(customerDTO.getPassword()));
+        CustomerDTO created = customerRepository.save(customerDTO);
+        created.setPassword(null);
+        return created;
     }
 
     @Override
@@ -61,9 +66,11 @@ public class CustomerServiceImpl implements CustomerService {
         existing.setEmail(user.getEmail());
         existing.setPhone(user.getPhone());
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
-            existing.setPassword(user.getPassword());
+            existing.setPassword(passwordService.encode(user.getPassword()));
         }
-        return customerRepository.update(existing);
+        CustomerDTO updated = customerRepository.update(existing);
+        updated.setPassword(null);
+        return updated;
     }
 
     @Override

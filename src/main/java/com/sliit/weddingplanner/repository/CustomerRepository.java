@@ -197,7 +197,9 @@ public class CustomerRepository {
     }
 
     public CustomerDTO update(CustomerDTO customerDTO) {
-        String sql = "UPDATE customer SET title=?, name=?, username=?, customer_role=?, other_party_name=?, email=?, phone=?, password=? WHERE customer_id=?";
+        String sql = customerDTO.getPassword() == null
+                ? "UPDATE customer SET title=?, name=?, username=?, customer_role=?, other_party_name=?, email=?, phone=? WHERE customer_id=?"
+                : "UPDATE customer SET title=?, name=?, username=?, customer_role=?, other_party_name=?, email=?, phone=?, password=? WHERE customer_id=?";
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, customerDTO.getTitle());
@@ -207,8 +209,12 @@ public class CustomerRepository {
             ps.setString(5, customerDTO.getOtherPartyName());
             ps.setString(6, customerDTO.getEmail());
             ps.setString(7, customerDTO.getPhone());
-            ps.setString(8, customerDTO.getPassword());
-            ps.setInt(9, customerDTO.getId());
+            if (customerDTO.getPassword() == null) {
+                ps.setInt(8, customerDTO.getId());
+            } else {
+                ps.setString(8, customerDTO.getPassword());
+                ps.setInt(9, customerDTO.getId());
+            }
             ps.executeUpdate();
             return customerDTO;
         } catch (SQLException e) {
