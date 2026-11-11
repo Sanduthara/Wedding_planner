@@ -34,3 +34,7 @@ build/
 
 # Local database configuration
 **/application-local.properties
+
+# Frontend dependencies and build output
+node_modules/
+/frontend/dist/
